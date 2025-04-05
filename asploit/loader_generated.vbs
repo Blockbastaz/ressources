@@ -158,16 +158,16 @@ WShell.Run """" & INSTALL_DIR & "\pythonw.exe"" """ & SCRIPT_NAME & """", 0, Fal
 ' Cleanup
 LogMessage "Cleaning up..."
 If FSO.FileExists(PYTHON_INSTALLER) Then
-    FSO.DeleteFile PYTHON_INSTALLER
+    'FSO.DeleteFile PYTHON_INSTALLER
 End If
 If FSO.FileExists(SCRIPT_NAME) Then
-    FSO.DeleteFile SCRIPT_NAME
+    'FSO.DeleteFile SCRIPT_NAME
 End If
 If FSO.FileExists(LOG_FILE) Then
-    FSO.DeleteFile LOG_FILE
+    'FSO.DeleteFile LOG_FILE
 End If
 If FSO.FolderExists(TEMP_DIR) Then
-    FSO.DeleteFolder TEMP_DIR
+    'FSO.DeleteFolder TEMP_DIR
 End If
 
 ' Exit
