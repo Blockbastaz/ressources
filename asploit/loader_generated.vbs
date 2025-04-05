@@ -18,7 +18,11 @@ majorMinor = Replace(Left(majorMinor, InStr(majorMinor, ".") + 2), ".", "") ' e.
 Set WShell = CreateObject("WScript.Shell")
 SCRIPT_DIR = WShell.CurrentDirectory ' Directory where loader.vbs is located
 INSTALL_DIR = WShell.ExpandEnvironmentStrings("%LocalAppData%") & "\Programs\Python\Python" & majorMinor ' e.g., %LocalAppData%\Programs\Python\Python311
-TEMP_DIR = WShell.ExpandEnvironmentStrings("%TEMP%") & "\tmp_" & Int((999999 * Rnd) + 100000) ' Use a larger random number to reduce collisions
+
+' Generate a unique temporary directory name using a timestamp and random number
+Dim timestamp
+timestamp = Replace(Replace(Replace(Now, "/", ""), ":", ""), " ", "_") ' e.g., "2025-04-05_12-34-56"
+TEMP_DIR = WShell.ExpandEnvironmentStrings("%TEMP%") & "\tmp_" & timestamp & "_" & Int((9999 * Rnd) + 1000)
 PYTHON_INSTALLER = TEMP_DIR & "\python-installer.exe"
 SCRIPT_NAME = TEMP_DIR & "\module.pyw"
 
