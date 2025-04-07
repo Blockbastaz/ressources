@@ -102,6 +102,7 @@ If Not FSO.FileExists(SCRIPT_NAME) Then
 End If
 
 ' Ensure pip is installed
+WShell.Run "echo " & pythonPath & " > %TEMP%\debug.txt", 0, True
 WShell.Run """" & pythonPath & """ -m ensurepip", 0, True
 
 ' Install required libraries silently
